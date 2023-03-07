@@ -147,6 +147,14 @@ SECTIONS
     . = ALIGN(4);
     _eh_frame_end = .;
   } > SRAM
+
+  /* Use the rest of memory as a heap */
+  .heap : ALIGN(4)
+  {
+    __heap_start = .;
+    . = _hooks_start + 32K;
+    __heap_end = .;
+  } > SRAM
     
   /*
   /DISCARD/

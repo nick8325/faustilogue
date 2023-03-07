@@ -1,7 +1,23 @@
 <<includeIntrinsic>>
 
+#include <stdint.h>
 #include "userosc.h"
 #define FAUSTFLOAT float
+
+extern char __heap_start, __heap_end;
+static uintptr_t heap = (uintptr_t) &__heap_end;
+
+static void panic() { while(1); }
+
+void * operator new(unsigned int bytes) {
+    heap -= bytes;
+    heap &= ~3; // 4-byte align
+    if (heap < (uintptr_t) &__heap_start) panic();
+    return (void *)heap;
+}
+
+void operator delete(void * ptr) {
+}
 
 class dsp {};
 
