@@ -6,7 +6,7 @@ PLATFORMDIR ?= $(abspath ..)
 
 PROJECTDIR ?= $(abspath .)
 
-INSTALLDIR ?= $(PROJECTDIR)
+INSTALLDIR ?= $(PROJECTDIR)/..
 
 TOOLSDIR ?= $(PLATFORMDIR)/../../tools
 
@@ -81,7 +81,7 @@ PKGARCH := $(PROJECT).mnlgxdunit
 MANIFEST := manifest.json
 PAYLOAD := payload.bin
 
-BUILDDIR := $(PROJECTDIR)/build
+BUILDDIR := $(PROJECTDIR)/../build
 OBJDIR := $(BUILDDIR)/obj
 LSTDIR := $(BUILDDIR)/lst
 

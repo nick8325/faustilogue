@@ -6,7 +6,7 @@ PROJECT = dummy_osc
 
 UCSRC =
 
-UCXXSRC = build/sawtooth_device.cpp
+UCXXSRC = ../build/oscillator.cpp
 
 UINCDIR =
 
