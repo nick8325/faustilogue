@@ -81,7 +81,7 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
   // Adapted from osc_w0f_for_note.
   float f0 = osc_notehzf(note);
-  float f1 = osc_notehzf(note);
+  float f1 = osc_notehzf(note+1);
   float f = clipmaxf(linintf(mod * k_note_mod_fscale, f0, f1), k_note_max_hz);
 
   set_key(note);
