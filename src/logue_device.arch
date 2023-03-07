@@ -1,6 +1,7 @@
 <<includeIntrinsic>>
 
 #include <stdint.h>
+#include <algorithm>
 #include "userosc.h"
 #define FAUSTFLOAT float
 
