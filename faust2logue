@@ -6,5 +6,5 @@ mkdir -p build
 faust -a src/logue_metadata.arch -I src -uim $FILE > build/oscillator_metadata.cpp
 faust -a src/logue.arch -fm $(pwd)/src/fastmath.cpp -I src -nvi $FILE > build/oscillator.cpp
 g++ -std=c++20 build/oscillator_metadata.cpp -o build/oscillator_metadata
-build/oscillator_metadata > build/inputs.h
+build/oscillator_metadata build/inputs.h build/manifest.json
 make -C logue-project install

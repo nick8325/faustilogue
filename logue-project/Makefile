@@ -78,7 +78,7 @@ TOPT := -mthumb -mno-thumb-interwork -DTHUMB_NO_INTERWORKING -DTHUMB_PRESENT
 # #############################################################################
 
 PKGARCH := $(PROJECT).mnlgxdunit
-MANIFEST := manifest.json
+MANIFEST := ../build/manifest.json
 PAYLOAD := payload.bin
 
 BUILDDIR := $(PROJECTDIR)/../build

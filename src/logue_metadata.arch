@@ -4,44 +4,30 @@
 #include <algorithm>
 #include <unordered_map>
 #include <string>
+#include <cstdlib>
+#include <fstream>
+#include <string>
+#include "faust/gui/APIUI.h"
 #define FAUSTFLOAT float
 using std::unordered_map;
 using std::string;
 using std::cout;
+using std::cerr;
 using std::endl;
+using std::exit;
+using std::ofstream;
+using std::to_string;
 
 class dsp {};
 
-struct Meta {
-    void declare(const char* key, const char* value) {};
+class MapMeta : public Meta, public unordered_map<string, string> {
+public:
+    void declare(const char* key, const char* value) {
+        (*this)[key] = value;
+    }
 };
 
 struct Soundfile {};
-
-struct UI {
-    // -- widget's layouts
-    void openTabBox(const char* label) {}
-    void openHorizontalBox(const char* label) {}
-    void openVerticalBox(const char* label) {}
-    void closeBox() {}
-
-    // -- active widgets
-    void addButton(const char* label, FAUSTFLOAT* zone) {}
-    void addCheckButton(const char* label, FAUSTFLOAT* zone) {}
-    void addVerticalSlider(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {}
-    void addHorizontalSlider(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {}
-    void addNumEntry(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {}
-
-    // -- passive widgets
-    void addHorizontalBargraph(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max) {}
-    void addVerticalBargraph(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max) {}
-
-    // -- soundfiles
-    void addSoundfile(const char* label, const char* filename, Soundfile** sf_zone) {}
-
-    // -- metadata declarations
-    void declare(FAUSTFLOAT* zone, const char* key, const char* val) {}
-};
 
 #define FAUST_ADDBUTTON(...)
 #define FAUST_ADDCHECKBOX(...)
@@ -60,6 +46,14 @@ unordered_map<string, string> zone_vars;
 #define ADD_ACTIVE(kind, faustname, name, var, ...) zone_vars[name] = #var;
 
 int main(int argc, char ** argv) {
+    if (argc != 3) {
+        cerr << "expected two output file names" << endl;
+        exit(1);
+    }
+
+    ofstream inputs(argv[1]);
+    ofstream manifest(argv[2]);
+
     FAUST_LIST_ACTIVES(ADD_ACTIVE)
 
     if (zone_vars.contains("vel") && !zone_vars.contains("velocity"))
@@ -73,8 +67,83 @@ int main(int argc, char ** argv) {
 
     for (string name: names) {
         if (zone_vars.contains(name))
-            cout << "#define set_" << name << "(val) dsp." << zone_vars[name] << " = val" << endl;
+            inputs << "#define set_" << name << "(val) dsp." << zone_vars[name] << " = val" << endl;
         else
-            cout << "#define set_" << name << "(val)" << endl;
+            inputs << "#define set_" << name << "(val)" << endl;
     }
+
+    MapMeta meta;
+    APIUI ui;
+    mydsp dsp;
+    dsp.metadata(&meta);
+    dsp.buildUserInterface(&ui);
+
+    int max_param = 0;
+    float mins[7], maxs[7];
+    string tooltips[7];
+    bool percents[7];
+
+    for (int param = 1; param <= 6; param++) {
+        string param_name = string("param") + to_string(param);
+        int index = ui.getParamIndex(param_name.c_str());
+
+        if (index == -1) {
+            mins[param] = 0;
+            maxs[param] = 0;
+            tooltips[param] = "Unused";
+            percents[param] = 0;
+        } else {
+            max_param = std::max(max_param, param);
+
+            mins[param] = ui.getParamMin(index);
+            maxs[param] = ui.getParamMax(index);
+            string unit = ui.getMetadata(index, "scale");
+            percents[param] = unit == "percent";
+            string name = ui.getMetadata(index, "tooltip");
+            if (name == "") name = string("Parameter ") + to_string(param);
+            tooltips[param] = name;
+
+            if (!percents[param]) {
+                // The UI displays all parameter numbers increased by one
+                mins[param]--;
+                maxs[param]--;
+                // But also values should be non-negative
+                if (mins[param] < 0) mins[param] = 0;
+            }
+        }
+    }
+
+    int level = 0;
+    #define INDENT for (int i = 0; i < level * 2; i++) manifest << ' ';
+    #define TOKEN(x) manifest << (x);
+    #define STRING(x) TOKEN('"') TOKEN(x) TOKEN('"')
+    #define NL manifest << endl;
+    #define OPEN TOKEN('{') level++; NL
+    #define CLOSE level--; INDENT TOKEN('}')
+    #define OPENSQ TOKEN('[') level++; NL
+    #define CLOSESQ level--; INDENT TOKEN(']')
+    #define KEY(x) INDENT STRING(#x) TOKEN(": ")
+    #define NEXT TOKEN(',') NL
+
+    OPEN KEY(header) OPEN
+        KEY(platform) STRING("minilogue-xd") NEXT
+        KEY(module) STRING("osc") NEXT
+        KEY(api) STRING("1.1-0") NEXT
+        KEY(dev_id) TOKEN(0) NEXT
+        KEY(prg_id) TOKEN(0) NEXT
+        KEY(version) STRING("1.0-0") NEXT
+        KEY(name) STRING(meta.contains("name") ? meta["name"] : FAUST_FILE_NAME) NEXT
+        KEY(num_param) TOKEN(max_param) NEXT
+        KEY(params) OPENSQ
+          for (int i = 1; i <= max_param; i++) {
+              INDENT TOKEN('[')
+              STRING(tooltips[i]) TOKEN(',')
+              TOKEN(mins[i]) TOKEN(',')
+              TOKEN(maxs[i]) TOKEN(',')
+              STRING(percents[i] ? "%" : "")
+              TOKEN(']')
+              if (i == max_param) NL else NEXT
+          }
+        CLOSESQ NL
+    CLOSE NL CLOSE NL
 }
