@@ -2,7 +2,7 @@
 # Project Customization
 # #############################################################################
 
-PROJECT = dummy_osc
+PROJECT = faust
 
 UCSRC =
 

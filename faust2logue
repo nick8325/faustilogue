@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+FILE=${1-examples/sawtooth.dsp}
+export PLATFORMDIR=~/prog/others/logue-sdk/platform/minilogue-xd
+mkdir -p build
+faust -a src/logue.arch -fm $(pwd)/src/fastmath.cpp -I src -nvi $FILE > build/oscillator.cpp
+make -C logue-project install
