@@ -1,0 +1,80 @@
+<<includeIntrinsic>>
+
+#include <iostream>
+#include <algorithm>
+#include <unordered_map>
+#include <string>
+#define FAUSTFLOAT float
+using std::unordered_map;
+using std::string;
+using std::cout;
+using std::endl;
+
+class dsp {};
+
+struct Meta {
+    void declare(const char* key, const char* value) {};
+};
+
+struct Soundfile {};
+
+struct UI {
+    // -- widget's layouts
+    void openTabBox(const char* label) {}
+    void openHorizontalBox(const char* label) {}
+    void openVerticalBox(const char* label) {}
+    void closeBox() {}
+
+    // -- active widgets
+    void addButton(const char* label, FAUSTFLOAT* zone) {}
+    void addCheckButton(const char* label, FAUSTFLOAT* zone) {}
+    void addVerticalSlider(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {}
+    void addHorizontalSlider(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {}
+    void addNumEntry(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT init, FAUSTFLOAT min, FAUSTFLOAT max, FAUSTFLOAT step) {}
+
+    // -- passive widgets
+    void addHorizontalBargraph(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max) {}
+    void addVerticalBargraph(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT min, FAUSTFLOAT max) {}
+
+    // -- soundfiles
+    void addSoundfile(const char* label, const char* filename, Soundfile** sf_zone) {}
+
+    // -- metadata declarations
+    void declare(FAUSTFLOAT* zone, const char* key, const char* val) {}
+};
+
+#define FAUST_ADDBUTTON(...)
+#define FAUST_ADDCHECKBOX(...)
+#define FAUST_ADDVERTICALSLIDER(...)
+#define FAUST_ADDHORIZONTALSLIDER(...)
+#define FAUST_ADDNUMENTRY(...)
+#define FAUST_ADDVERTICALBARGRAPH(...)
+#define FAUST_ADDHORIZONTALBARGRAPH(...)
+#define FAUST_ADDSOUNDFILE(...)
+#define FAUST_UIMACROS
+
+<<includeclass>>
+
+unordered_map<string, string> zone_vars;
+
+#define ADD_ACTIVE(kind, faustname, name, var, ...) add_active(name, #var);
+
+void add_active(string name, string var_name) {
+    zone_vars[name] = var_name;
+}
+
+int main() {
+    FAUST_LIST_ACTIVES(ADD_ACTIVE)
+
+    if (zone_vars.contains("vel") && !zone_vars.contains("velocity"))
+        zone_vars["velocity"] = zone_vars["vel"];
+
+    string names[] = {"key", "freq", "velocity", "gain", "gate"};
+
+    for (string name: names) {
+        if (zone_vars.contains(name))
+            cout << "#define set_" << name << "(val) dsp." << zone_vars[name] << " = val" << endl;
+        else
+            cout << "#define set_" << name << "(val)" << endl;
+    }
+}

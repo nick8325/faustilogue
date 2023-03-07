@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <algorithm>
 #include "userosc.h"
+#include "inputs.h"
 #define FAUSTFLOAT float
 
 extern char __heap_start, __heap_end;
@@ -53,7 +54,10 @@ struct UI {
     void declare(FAUSTFLOAT* zone, const char* key, const char* val) {}
 };
 
+// We need access to the sliders etc!
+#define private public
 <<includeclass>>
+#undef private
 
 mydsp dsp;
 
@@ -71,6 +75,18 @@ void OSC_CYCLE(const user_osc_param_t * const params,
   FAUSTFLOAT ynf[frames];
   FAUSTFLOAT *inputs[] = {};
   FAUSTFLOAT *outputs[] = {ynf};
+
+  uint8_t note = params->pitch >> 8;
+  uint8_t mod = params->pitch & 0xff;
+
+  // Adapted from osc_w0f_for_note.
+  float f0 = osc_notehzf(note);
+  float f1 = osc_notehzf(note);
+  float f = clipmaxf(linintf(mod * k_note_mod_fscale, f0, f1), k_note_max_hz);
+
+  set_key(note);
+  set_freq(f);
+
   dsp.compute(frames, inputs, outputs);
   for (int i = 0; i < frames; i++)
     yn[i] = f32_to_q31(ynf[i]);
@@ -78,12 +94,18 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
 void OSC_NOTEON(const user_osc_param_t * const params)
 {
-  (void)params;
+  set_velocity(64);
+  set_gain(0.5);
+  set_gate(1);
+  dsp.instanceClear(); // Makes some sense since the oscillator is monophonic
+                       // and is paused when the ADSR envelope is at zero
 }
 
 void OSC_NOTEOFF(const user_osc_param_t * const params)
 {
-  (void)params;
+  set_velocity(0);
+  set_gain(0);
+  set_gate(0);
 }
 
 void OSC_PARAM(uint16_t index, uint16_t value)
