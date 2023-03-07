@@ -57,19 +57,19 @@ struct UI {
 
 unordered_map<string, string> zone_vars;
 
-#define ADD_ACTIVE(kind, faustname, name, var, ...) add_active(name, #var);
+#define ADD_ACTIVE(kind, faustname, name, var, ...) zone_vars[name] = #var;
 
-void add_active(string name, string var_name) {
-    zone_vars[name] = var_name;
-}
-
-int main() {
+int main(int argc, char ** argv) {
     FAUST_LIST_ACTIVES(ADD_ACTIVE)
 
     if (zone_vars.contains("vel") && !zone_vars.contains("velocity"))
         zone_vars["velocity"] = zone_vars["vel"];
 
-    string names[] = {"key", "freq", "velocity", "gain", "gate"};
+    string names[] = {
+        "key", "freq", "velocity", "gain", "gate",
+        "shape", "shiftshape", "lfo", "cutoff", "resonance",
+        "param1", "param2", "param3", "param4", "param5", "param6"
+    };
 
     for (string name: names) {
         if (zone_vars.contains(name))

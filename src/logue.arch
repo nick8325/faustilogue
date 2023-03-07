@@ -86,6 +86,9 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
   set_key(note);
   set_freq(f);
+  set_lfo(q31_to_f32(params->shape_lfo));
+  set_cutoff((float)params->cutoff / 0x1fff);
+  set_resonance((float)params->resonance / 0x1fff);
 
   dsp.compute(frames, inputs, outputs);
   for (int i = 0; i < frames; i++)
@@ -109,72 +112,38 @@ void OSC_NOTEOFF(const user_osc_param_t * const params)
 }
 
 void OSC_PARAM(uint16_t index, uint16_t value)
-{ 
-  (void)index;
-  (void)value;
-#if 0
-  Waves::Params &p = s_waves.params;
-  Waves::State &s = s_waves.state;
-  
+{
   switch (index) {
   case k_user_osc_param_id1:
-    // wave 0
-    // select parameter
-    {
-      static const uint8_t cnt = k_waves_a_cnt + k_waves_b_cnt + k_waves_c_cnt; 
-      p.wave0 = value % cnt;
-      s.flags |= Waves::k_flag_wave0;
-    }
+    set_param1(value);
     break;
-    
+
   case k_user_osc_param_id2:
-    // wave 1
-    // select parameter
-    {
-      static const uint8_t cnt = k_waves_d_cnt + k_waves_e_cnt + k_waves_f_cnt; 
-      p.wave1 = value % cnt;
-      s.flags |= Waves::k_flag_wave1;
-    }
+    set_param2(value);
     break;
-    
+
   case k_user_osc_param_id3:
-    // sub wave
-    // select parameter
-    p.subwave = value % k_waves_a_cnt;
-    s.flags |= Waves::k_flag_subwave;
+    set_param3(value);
     break;
-    
+
   case k_user_osc_param_id4:
-    // sub mix
-    // percent parameter
-    p.submix = clip01f(0.05f + value * 0.01f * 0.90f); // scale in 0.05 - 0.95
+    set_param4(value);
     break;
-    
+
   case k_user_osc_param_id5:
-    // ring mix
-    // percent parameter
-    p.ringmix = clip01f(value * 0.01f);
+    set_param5(value);
     break;
-    
+
   case k_user_osc_param_id6:
-    // bit crush
-    // percent parameter
-    p.bitcrush = clip01f(value * 0.01f);
-    s.flags |= Waves::k_flag_bitcrush;
+    set_param6(value);
     break;
-    
+
   case k_user_osc_param_shape:
-    // 10bit parameter
-    p.shape = param_val_to_f32(value);
+    set_shape(param_val_to_f32(value));
     break;
     
   case k_user_osc_param_shiftshape:
-    // 10bit parameter
-    p.shiftshape = 1.f + param_val_to_f32(value); 
-    break;
-    
-  default:
+    set_shiftshape(param_val_to_f32(value));
     break;
   }
-#endif
 }
