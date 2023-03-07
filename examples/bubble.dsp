@@ -40,4 +40,4 @@ bubble(f0,trig) = os.osc(f) * (exp(-damp*time) : si.smooth(0.99))
 		time = 0 : (select2(trig>trig'):+(1)) ~ _ : ba.samp2sec;
 	};
 
-process = button("drop") : bubble(hslider("v:bubble/freq", 600, 150, 2000, 1));
+process = button("drop") : bubble(hslider("shape", 600, 150, 2000, 1));

@@ -41,10 +41,6 @@ struct Soundfile {};
 
 <<includeclass>>
 
-unordered_map<string, string> zone_vars;
-
-#define ADD_ACTIVE(kind, faustname, name, var, ...) zone_vars[name] = #var;
-
 int main(int argc, char ** argv) {
     if (argc != 3) {
         cerr << "expected two output file names" << endl;
@@ -54,24 +50,7 @@ int main(int argc, char ** argv) {
     ofstream inputs(argv[1]);
     ofstream manifest(argv[2]);
 
-    FAUST_LIST_ACTIVES(ADD_ACTIVE)
-
-    if (zone_vars.contains("vel") && !zone_vars.contains("velocity"))
-        zone_vars["velocity"] = zone_vars["vel"];
-
-    string names[] = {
-        "key", "freq", "velocity", "gain", "gate",
-        "shape", "shiftshape", "lfo", "cutoff", "resonance",
-        "param1", "param2", "param3", "param4", "param5", "param6"
-    };
-
-    for (string name: names) {
-        if (zone_vars.contains(name))
-            inputs << "#define set_" << name << "(val) dsp." << zone_vars[name] << " = val" << endl;
-        else
-            inputs << "#define set_" << name << "(val)" << endl;
-    }
-
+    // First produce the manifest file.
     MapMeta meta;
     APIUI ui;
     mydsp dsp;
@@ -107,12 +86,13 @@ int main(int argc, char ** argv) {
                 // The UI displays all parameter numbers increased by one
                 mins[param]--;
                 maxs[param]--;
-                // But also values should be non-negative
+                // But also values are not allowed to be negative
                 if (mins[param] < 0) mins[param] = 0;
             }
         }
     }
 
+    // The world's worst JSON emitter!
     int level = 0;
     #define INDENT for (int i = 0; i < level * 2; i++) manifest << ' ';
     #define TOKEN(x) manifest << (x);
@@ -146,4 +126,53 @@ int main(int argc, char ** argv) {
           }
         CLOSESQ NL
     CLOSE NL CLOSE NL
+
+    // Now produce inputs.h. This is a file which defines macros for
+    // sending new events to Faust - e.g. when a key is pressed.
+    // If the user defines e.g.
+    //   freq = hslider("freq", 100, 1, 20000, 1)
+    // then the DSP class will contain a field e.g. fFreq, and then
+    // inputs.h will contain a macro definition
+    //   #define set_freq(val) dsp.fFreq = val.
+    //
+    // The relevant information largely comes from FAUST_LIST_ACTIVES.
+    // One extra feature is that we auto-scale shape and shift-shape.
+    // These natively have a range of 0..1, but if the user declares e.g.
+    //   hslider("shape", 600, 150, 2000, 1)
+    // then we will scale the range to 150...2000 instead. In this file,
+    // all that we do is emit the min/max range of shape/shift-shape as
+    // macro definitions - logue.arch takes care of the calculations.
+
+    unordered_map<string, string> zone_vars;
+    #define ADD_ACTIVE(kind, faustname, name, var, ...) zone_vars[name] = #var;
+    FAUST_LIST_ACTIVES(ADD_ACTIVE)
+
+    if (zone_vars.contains("vel") && !zone_vars.contains("velocity"))
+        zone_vars["velocity"] = zone_vars["vel"];
+
+    string names[] = {
+        "key", "freq", "velocity", "gain", "gate",
+        "shape", "shiftshape", "lfo", "cutoff", "resonance",
+        "param1", "param2", "param3", "param4", "param5", "param6"
+    };
+
+    for (string name: names) {
+        if (zone_vars.contains(name))
+            inputs << "#define set_" << name << "(val) dsp." << zone_vars[name] << " = val" << endl;
+        else
+            inputs << "#define set_" << name << "(val)" << endl;
+    }
+
+    #define emit_shape_bounds(name, min_name, max_name) { \
+        int index = ui.getParamIndex(name); \
+        float min = 0, max = 0; \
+        if (index != -1) { \
+            min = ui.getParamMin(index); \
+            max = ui.getParamMax(index); \
+        } \
+        inputs << "#define " << #min_name << " " << min << endl; \
+        inputs << "#define " << #max_name << " " << max << endl; \
+    }
+    emit_shape_bounds("shape", SHAPE_MIN, SHAPE_MAX);
+    emit_shape_bounds("shiftshape", SHIFTSHAPE_MIN, SHIFTSHAPE_MAX);
 }
