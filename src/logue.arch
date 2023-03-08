@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "userosc.h"
 #include "inputs.h"
+#include "utils/buffer_ops.h"
 #define FAUSTFLOAT float
 
 // Boilerplate
@@ -85,8 +86,7 @@ void OSC_CYCLE(const user_osc_param_t * const params,
   FAUSTFLOAT *outputs[] = {ynf};
 
   dsp.compute(frames, inputs, outputs);
-  for (int i = 0; i < frames; i++)
-    yn[i] = f32_to_q31(ynf[i]);
+  buf_f32_to_q31(ynf, yn, frames);
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params)
