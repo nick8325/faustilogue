@@ -1,0 +1,11 @@
+2000ff18
+bits 24-30 are noisy (i.e. is always above 2000fe00)
+
+initial address:
+2000fef8
+
+lowest address:
+2000feb0
+
+highest address:
+2000ff28
