@@ -34,16 +34,14 @@ struct UI {
 
 // A tiny little heap implementation (no freeing). This is only used (so far)
 // at program startup, in the implementation of tables.
-extern char __heap_start, __heap_end;
-static uintptr_t heap = (uintptr_t) &__heap_end;
-
-static void panic() { while(1); }
+extern char _eh_frame_end;
+static uintptr_t heap = (uintptr_t) &_eh_frame_end;
 
 void * operator new(unsigned int bytes) {
-    heap -= bytes;
-    heap &= ~3; // 4-byte align
-    if (heap < (uintptr_t) &__heap_start) panic();
-    return (void *)heap;
+    heap += 3; heap &= ~3; // 4-byte align
+    void * result = (void *) heap;
+    heap += bytes;
+    return result;
 }
 
 void operator delete(void * ptr) {
