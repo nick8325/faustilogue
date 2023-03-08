@@ -41,6 +41,15 @@ struct Soundfile {};
 
 <<includeclass>>
 
+// Some sanity checks.
+#if FAUST_INPUTS != 0
+#error Cannot handle code with audio inputs
+#endif
+
+#if FAUST_OUTPUTS > 1
+#error Cannot handle code with more than one output
+#endif
+
 int main(int argc, char ** argv) {
     if (argc != 3) {
         cerr << "expected two output file names" << endl;
@@ -76,8 +85,8 @@ int main(int argc, char ** argv) {
 
             mins[param] = ui.getParamMin(index);
             maxs[param] = ui.getParamMax(index);
-            string unit = ui.getMetadata(index, "scale");
-            percents[param] = unit == "percent";
+            string style = ui.getMetadata(index, "style");
+            percents[param] = style == "percentage";
             string name = ui.getMetadata(index, "tooltip");
             if (name == "") name = string("Parameter ") + to_string(param);
             tooltips[param] = name;
@@ -122,7 +131,7 @@ int main(int argc, char ** argv) {
               TOKEN(maxs[i]) TOKEN(',')
               STRING(percents[i] ? "%" : "")
               TOKEN(']')
-              if (i == max_param) NL else NEXT
+              if (i == max_param) { NL } else { NEXT }
           }
         CLOSESQ NL
     CLOSE NL CLOSE NL
