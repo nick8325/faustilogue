@@ -1,3 +1,16 @@
+// Some sanity checks.
+#if FAUST_INPUTS != 0
+#error Cannot handle code with audio inputs
+#endif
+
+#if FAUST_OUTPUTS > 1
+#error Cannot handle code with more than one output
+#endif
+
+#if DOWNSAMPLE_FACTOR != 1 && DOWNSAMPLE_FACTOR != 2 && DOWNSAMPLE_FACTOR != 4
+#error Downsampling can only be by a factor of 1, 2 or 4
+#endif
+
 <<includeIntrinsic>>
 
 #include <stdint.h>
@@ -48,9 +61,7 @@ float fControl[FAUST_REAL_CONTROLS];
 #define DEMCR (volatile uint32_t* volatile) 0xe000edfc
 #define DWT_CTRL (volatile uint32_t* volatile) 0xe0001000
 #define DWT_CYCCNT (volatile uint32_t* volatile) 0xe0001004
-#endif
 
-#ifdef MONITOR_CPU_USAGE
 uint32_t previous_ticks = 0;
 float lfo_phase = 0;
 float sin_phase = 0;
@@ -73,6 +84,12 @@ void OSC_CYCLE(const user_osc_param_t * const params,
                int32_t *yn,
                const uint32_t frames)
 {
+#ifdef MONITOR_CPU_USAGE
+  uint32_t ticks_before = *DWT_CYCCNT;
+  uint32_t total_ticks = ticks_before - previous_ticks;
+  previous_ticks = ticks_before;
+#endif
+
   // Update all parameters.
   // The pitchbending code comes from osc_w0f_for_note.
   uint8_t note = params->pitch >> 8;
@@ -87,17 +104,7 @@ void OSC_CYCLE(const user_osc_param_t * const params,
   set_cutoff((float)params->cutoff / 0x1fff);
   set_resonance((float)params->resonance / 0x1fff);
 
-#if DOWNSAMPLE_FACTOR != 1 && DOWNSAMPLE_FACTOR != 2 && DOWNSAMPLE_FACTOR != 4
-#error Downsampling can only be by a factor of 1, 2 or 4
-#endif
-
   FAUSTFLOAT val_f32;
-
-#ifdef MONITOR_CPU_USAGE
-  uint32_t ticks_before = *DWT_CYCCNT;
-  uint32_t total_ticks = ticks_before - previous_ticks;
-  previous_ticks = ticks_before;
-#endif
 
   dsp.control(iControl, fControl);
   for (unsigned i = 0; i < frames/DOWNSAMPLE_FACTOR; i++) {
@@ -105,7 +112,9 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
 #ifdef MONITOR_CPU_USAGE
     volatile float dummy = val_f32;
-#else
+    continue;
+#endif
+
     q31_t val = f32_to_q31(val_f32);
     *yn++ = val;
 #if DOWNSAMPLE_FACTOR >= 2
@@ -114,7 +123,6 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 #if DOWNSAMPLE_FACTOR >= 4
     *yn++ = val;
     *yn++ = val;
-#endif
 #endif
   }
 

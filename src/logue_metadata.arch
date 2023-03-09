@@ -41,15 +41,6 @@ struct Soundfile {};
 
 <<includeclass>>
 
-// Some sanity checks.
-#if FAUST_INPUTS != 0
-#error Cannot handle code with audio inputs
-#endif
-
-#if FAUST_OUTPUTS > 1
-#error Cannot handle code with more than one output
-#endif
-
 int main(int argc, char ** argv) {
     if (argc != 3) {
         cerr << "expected two output file names" << endl;
