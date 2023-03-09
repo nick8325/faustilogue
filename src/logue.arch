@@ -51,12 +51,9 @@ float fControl[FAUST_REAL_CONTROLS];
 #endif
 
 #ifdef MONITOR_CPU_LOAD
-uint32_t time = 0;
-uint32_t busy_ticks = 0;
-uint32_t start_tick = 0;
-float cpu_usage = 0;
-#define UPDATES_PER_SECOND 25
-#define TICKS_PER_UPDATE (84000000/UPDATES_PER_SECOND)
+uint32_t previous_ticks = 0;
+float lfo_phase = 0;
+float sin_phase = 0;
 #endif
 
 void OSC_INIT(uint32_t platform, uint32_t api)
@@ -68,7 +65,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 #ifdef MONITOR_CPU_LOAD
   *DEMCR |= 0x01000000;
   *DWT_CTRL |= 1;
-  start_tick = *DWT_CYCCNT;
+  previous_ticks = *DWT_CYCCNT;
 #endif
 }
 
@@ -98,13 +95,8 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
 #ifdef MONITOR_CPU_LOAD
   uint32_t ticks_before = *DWT_CYCCNT;
-  uint32_t total_ticks = ticks_before - start_tick;
-
-  if (total_ticks >= TICKS_PER_UPDATE) {
-    cpu_usage = (float)busy_ticks / total_ticks;
-    start_tick = ticks_before;
-    busy_ticks = 0;
-  }
+  uint32_t total_ticks = ticks_before - previous_ticks;
+  previous_ticks = ticks_before;
 #endif
 
   dsp.control(iControl, fControl);
@@ -128,12 +120,18 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
 #ifdef MONITOR_CPU_LOAD
   uint32_t ticks_after = *DWT_CYCCNT;
-  busy_ticks += ticks_after - ticks_before;
+  uint32_t busy_ticks = ticks_after - ticks_before;
+  float cpu_usage = (float)busy_ticks / total_ticks;
 
-  float freq = 50 + cpu_usage*100;
+  float lfo_freq = cpu_usage*10; // 0.1Hz to 10Hz
   for (unsigned i = 0; i < frames; i++) {
-    *yn++ = f32_to_q31(osc_sinf((float)time * freq / 48000));
-    time++;
+    lfo_phase += lfo_freq/48000;
+    lfo_phase -= (int)lfo_phase;
+    float sin_freq = 440 + 440 * osc_sinf(lfo_phase);
+    sin_phase += sin_freq/48000;
+    sin_phase -= (int)sin_phase;
+
+    *yn++ = f32_to_q31(osc_sinf(sin_phase));
   }
 #endif
 }
