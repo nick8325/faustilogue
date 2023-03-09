@@ -81,12 +81,28 @@ void OSC_CYCLE(const user_osc_param_t * const params,
   set_resonance((float)params->resonance / 0x1fff);
 
   // Do the computation on floats, then convert to q31.
-  FAUSTFLOAT ynf[frames];
+
+#if SR_DIVIDER != 1 && SR_DIVIDER != 2 && SR_DIVIDER != 4
+#error Sample rate must be 48, 24, or 12 kHz
+#endif
+
+  int downframes = frames/SR_DIVIDER;
+  FAUSTFLOAT ynf[downframes];
   FAUSTFLOAT *inputs[] = {};
   FAUSTFLOAT *outputs[] = {ynf};
 
-  dsp.compute(frames, inputs, outputs);
-  buf_f32_to_q31(ynf, yn, frames);
+  dsp.compute(downframes, inputs, outputs);
+  for (int i = 0; i < downframes; i++) {
+    q31_t val = f32_to_q31(ynf[i]);
+    *yn++ = val;
+#if SR_DIVIDER >= 2
+    *yn++ = val;
+#endif
+#if SR_DIVIDER >= 4
+    *yn++ = val;
+    *yn++ = val;
+#endif
+  }
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params)
