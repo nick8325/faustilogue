@@ -80,6 +80,8 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 #endif
 }
 
+uint32_t frames_since_last_control = 0;
+
 void OSC_CYCLE(const user_osc_param_t * const params,
                int32_t *yn,
                const uint32_t frames)
@@ -106,7 +108,12 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
   FAUSTFLOAT val_f32;
 
-  dsp.control(iControl, fControl);
+  frames_since_last_control += frames;
+  if (frames_since_last_control >= FRAMES_PER_CONTROL) {
+     frames_since_last_control = 0;
+     dsp.control(iControl, fControl);
+  }
+
   for (unsigned i = 0; i < frames/DOWNSAMPLE_FACTOR; i++) {
     dsp.compute(0, &val_f32, iControl, fControl);
 
