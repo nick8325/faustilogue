@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+~/x-tools/arm-unknown-linux-uclibcgnueabihf/bin/arm-unknown-linux-uclibcgnueabihf-gcc loader.c -W -I ~/prog/others/logue-sdk/platform/minilogue-xd/inc -I ~/prog/others/logue-sdk/platform/minilogue-xd/inc/utils -I ~/prog/others/logue-sdk/platform/ext/CMSIS/CMSIS/Include -DSTM32F401xC -DCORTEX_USE_FPU=TRUE -DARM_MATH_CM4 -D__FPU_PRESENT -o loader
+qemu-arm -cpu cortex-m4 $* ./loader $(dirname $0)/../build/faust.bin out.wav
+aplay -f S32_LE out.wav -r 48000
