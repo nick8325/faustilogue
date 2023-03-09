@@ -5,7 +5,7 @@ DOWNSAMPLE_FACTOR=${DOWNSAMPLE_FACTOR-1}
 TABLE_SIZE=${TABLE_SIZE-128}
 cat > build/platform.lib <<EOF
 SR = 48000 / $DOWNSAMPLE_FACTOR;
-BS = min(64, max(1, fvariable(int count, <math.h>)));
+BS = 1;
 tablesize = $TABLE_SIZE;
 EOF
 
