@@ -44,11 +44,32 @@ mydsp dsp;
 int iControl[FAUST_INT_CONTROLS];
 float fControl[FAUST_REAL_CONTROLS];
 
+#ifdef MONITOR_CPU_LOAD
+#define DEMCR (volatile uint32_t* volatile) 0xe000edfc
+#define DWT_CTRL (volatile uint32_t* volatile) 0xe0001000
+#define DWT_CYCCNT (volatile uint32_t* volatile) 0xe0001004
+#endif
+
+#ifdef MONITOR_CPU_LOAD
+uint32_t time = 0;
+uint32_t busy_ticks = 0;
+uint32_t start_tick = 0;
+float cpu_usage = 0;
+#define UPDATES_PER_SECOND 25
+#define TICKS_PER_UPDATE (84000000/UPDATES_PER_SECOND)
+#endif
+
 void OSC_INIT(uint32_t platform, uint32_t api)
 {
   (void)platform;
   (void)api;
   dsp.init(k_samplerate);
+
+#ifdef MONITOR_CPU_LOAD
+  *DEMCR |= 0x01000000;
+  *DWT_CTRL |= 1;
+  start_tick = *DWT_CYCCNT;
+#endif
 }
 
 void OSC_CYCLE(const user_osc_param_t * const params,
@@ -69,18 +90,30 @@ void OSC_CYCLE(const user_osc_param_t * const params,
   set_cutoff((float)params->cutoff / 0x1fff);
   set_resonance((float)params->resonance / 0x1fff);
 
-  // Do the computation on floats, then convert to q31.
-
 #if DOWNSAMPLE_FACTOR != 1 && DOWNSAMPLE_FACTOR != 2 && DOWNSAMPLE_FACTOR != 4
 #error Downsampling can only be by a factor of 1, 2 or 4
 #endif
 
   FAUSTFLOAT val_f32;
 
+#ifdef MONITOR_CPU_LOAD
+  uint32_t ticks_before = *DWT_CYCCNT;
+  uint32_t total_ticks = ticks_before - start_tick;
+
+  if (total_ticks >= TICKS_PER_UPDATE) {
+    cpu_usage = (float)busy_ticks / total_ticks;
+    start_tick = ticks_before;
+    busy_ticks = 0;
+  }
+#endif
+
   dsp.control(iControl, fControl);
   for (unsigned i = 0; i < frames/DOWNSAMPLE_FACTOR; i++) {
     dsp.compute(0, &val_f32, iControl, fControl);
 
+#ifdef MONITOR_CPU_LOAD
+    volatile float dummy = val_f32;
+#else
     q31_t val = f32_to_q31(val_f32);
     *yn++ = val;
 #if DOWNSAMPLE_FACTOR >= 2
@@ -90,7 +123,19 @@ void OSC_CYCLE(const user_osc_param_t * const params,
     *yn++ = val;
     *yn++ = val;
 #endif
+#endif
   }
+
+#ifdef MONITOR_CPU_LOAD
+  uint32_t ticks_after = *DWT_CYCCNT;
+  busy_ticks += ticks_after - ticks_before;
+
+  float freq = 50 + cpu_usage*100;
+  for (unsigned i = 0; i < frames; i++) {
+    *yn++ = f32_to_q31(osc_sinf((float)time * freq / 48000));
+    time++;
+  }
+#endif
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params)
