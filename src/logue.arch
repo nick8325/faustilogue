@@ -1,16 +1,3 @@
-// Some sanity checks.
-#if FAUST_INPUTS != 0
-#error Cannot handle code with audio inputs
-#endif
-
-#if FAUST_OUTPUTS > 1
-#error Cannot handle code with more than one output
-#endif
-
-#if SAMPLE_RATE_FACTOR != 1 && SAMPLE_RATE_FACTOR != 2 && SAMPLE_RATE_FACTOR != 4
-#error Audio rate must be 48kHz, 24kHz or 12kHz
-#endif
-
 <<includeIntrinsic>>
 
 #include <stdint.h>
