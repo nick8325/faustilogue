@@ -1,6 +1,15 @@
 #!/bin/sh
 set -e
-cd $(dirname $0)
-~/x-tools/arm-unknown-linux-uclibcgnueabihf/bin/arm-unknown-linux-uclibcgnueabihf-gcc loader.c -W -I ~/prog/others/logue-sdk/platform/minilogue-xd/inc -I ~/prog/others/logue-sdk/platform/minilogue-xd/inc/utils -I ~/prog/others/logue-sdk/platform/ext/CMSIS/CMSIS/Include -DSTM32F401xC -DCORTEX_USE_FPU=TRUE -DARM_MATH_CM4 -D__FPU_PRESENT -o loader
-qemu-arm -cpu cortex-m4 $* ./loader ../build/faust.bin out.wav
-aplay -f S32_LE out.wav -r 48000
+HERE=$(dirname $0)
+GCC_PATH=${GCC_PATH:-~/x-tools/arm-unknown-linux-uclibcgnueabihf/bin/arm-unknown-linux-uclibcgnueabihf-gcc}
+SDK_PATH=${SDK_PATH:-$HERE/../logue-sdk}
+BIN_FILE=${BIN_FILE:-$SDK_PATH/platform/minilogue-xd/faust/build/faust.bin}
+WAV_FILE=${WAV_FILE:-/tmp/out.wav}
+
+$GCC_PATH $HERE/loader.c -o $HERE/loader -W \
+    -I $SDK_PATH/platform/minilogue-xd/inc \
+    -I $SDK_PATH/platform/minilogue-xd/inc/utils \
+    -I $SDK_PATH/platform/ext/CMSIS/CMSIS/Include \
+    -DSTM32F401xC -DCORTEX_USE_FPU=TRUE -DARM_MATH_CM4 -D__FPU_PRESENT
+qemu-arm -cpu cortex-m4 $* $HERE/loader $BIN_FILE $WAV_FILE
+aplay -f S32_LE -r 48000 $WAV_FILE
