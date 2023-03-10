@@ -133,7 +133,8 @@ int main(int argc, char ** argv) {
     //   freq = hslider("freq", 100, 1, 20000, 1)
     // then the DSP class will contain a field e.g. fFreq, and then
     // inputs.h will contain a macro definition
-    //   #define set_freq(val) dsp.fFreq = val.
+    //   #define set_freq(val) dsp.fFreq = val
+    //   #define initial_freq 100
     //
     // The relevant information largely comes from FAUST_LIST_ACTIVES.
     // One extra feature is that we auto-scale shape and shift-shape.
@@ -157,9 +158,12 @@ int main(int argc, char ** argv) {
     };
 
     for (string name: names) {
-        if (zone_vars.contains(name))
+        if (zone_vars.contains(name)) {
+            int index = ui.getParamIndex(name.c_str());
+            float init = ui.getParamInit(index);
             inputs << "#define set_" << name << "(val) dsp." << zone_vars[name] << " = val" << endl;
-        else
+            inputs << "#define initial_" << name << " " << init << endl;
+        } else
             inputs << "#define set_" << name << "(val)" << endl;
     }
 

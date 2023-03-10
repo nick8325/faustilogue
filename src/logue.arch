@@ -78,6 +78,15 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   *DWT_CTRL |= 1;
   previous_ticks = *DWT_CYCCNT;
 #endif
+
+  set_shape(initial_shape);
+  set_shiftshape(initial_shiftshape);
+  set_param1(initial_param1);
+  set_param2(initial_param2);
+  set_param3(initial_param3);
+  set_param4(initial_param4);
+  set_param5(initial_param5);
+  set_param6(initial_param6);
 }
 
 uint32_t frames_since_last_control = 0;
