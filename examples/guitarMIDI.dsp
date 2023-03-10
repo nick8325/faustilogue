@@ -5,7 +5,7 @@ declare copyright "(c)Romain Michon, CCRMA (Stanford University), GRAME";
 
 import("stdfaust.lib");
 
-process = guitar_ui_MIDI <: _,_;
+process = guitar_ui_MIDI <: _;
 
 guitar_ui_MIDI = pm.guitar(stringLength,pluckPosition,gain,gate)
 with{
