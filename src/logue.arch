@@ -7,8 +7,8 @@
 #error Cannot handle code with more than one output
 #endif
 
-#if DOWNSAMPLE_FACTOR != 1 && DOWNSAMPLE_FACTOR != 2 && DOWNSAMPLE_FACTOR != 4
-#error Downsampling can only be by a factor of 1, 2 or 4
+#if SAMPLE_RATE_FACTOR != 1 && SAMPLE_RATE_FACTOR != 2 && SAMPLE_RATE_FACTOR != 4
+#error Audio rate must be 48kHz, 24kHz or 12kHz
 #endif
 
 <<includeIntrinsic>>
@@ -57,7 +57,7 @@ mydsp dsp;
 int iControl[FAUST_INT_CONTROLS];
 float fControl[FAUST_REAL_CONTROLS];
 
-#ifdef MONITOR_CPU_USAGE
+#ifdef MONITOR_CPU_LOAD
 #define DEMCR (volatile uint32_t* volatile) 0xe000edfc
 #define DWT_CTRL (volatile uint32_t* volatile) 0xe0001000
 #define DWT_CYCCNT (volatile uint32_t* volatile) 0xe0001004
@@ -73,7 +73,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   (void)api;
   dsp.init(k_samplerate);
 
-#ifdef MONITOR_CPU_USAGE
+#ifdef MONITOR_CPU_LOAD
   *DEMCR |= 0x01000000;
   *DWT_CTRL |= 1;
   previous_ticks = *DWT_CYCCNT;
@@ -86,7 +86,7 @@ void OSC_CYCLE(const user_osc_param_t * const params,
                int32_t *yn,
                const uint32_t frames)
 {
-#ifdef MONITOR_CPU_USAGE
+#ifdef MONITOR_CPU_LOAD
   uint32_t ticks_before = *DWT_CYCCNT;
   uint32_t total_ticks = ticks_before - previous_ticks;
   previous_ticks = ticks_before;
@@ -114,26 +114,26 @@ void OSC_CYCLE(const user_osc_param_t * const params,
      dsp.control(iControl, fControl);
   }
 
-  for (unsigned i = 0; i < frames/DOWNSAMPLE_FACTOR; i++) {
+  for (unsigned i = 0; i < frames/SAMPLE_RATE_FACTOR; i++) {
     dsp.compute(0, &val_f32, iControl, fControl);
 
-#ifdef MONITOR_CPU_USAGE
+#ifdef MONITOR_CPU_LOAD
     volatile float dummy = val_f32;
     continue;
 #endif
 
     q31_t val = f32_to_q31(val_f32);
     *yn++ = val;
-#if DOWNSAMPLE_FACTOR >= 2
+#if SAMPLE_RATE_FACTOR >= 2
     *yn++ = val;
 #endif
-#if DOWNSAMPLE_FACTOR >= 4
+#if SAMPLE_RATE_FACTOR >= 4
     *yn++ = val;
     *yn++ = val;
 #endif
   }
 
-#ifdef MONITOR_CPU_USAGE
+#ifdef MONITOR_CPU_LOAD
   uint32_t ticks_after = *DWT_CYCCNT;
   uint32_t busy_ticks = ticks_after - ticks_before;
   float cpu_usage = (float)busy_ticks / total_ticks;
