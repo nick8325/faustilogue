@@ -160,7 +160,7 @@ def write_output_file(filename, output, widgets, sample_rate, control_rate, moni
                 params.remove(param)
 
                 # All parameters use set_XXX
-                file.write(f"#define set_{param}(val) dsp.{w.var} = val\n")
+                file.write(f"#define set_{param}(val) do {{ float _new_val = val; if (dsp.{w.var} != _new_val) control_changed = true; dsp.{w.var} = _new_val; }} while(0)\n")
 
                 # Parameters which are set by OSC_PARAM also use initial_XXX
                 if param.startswith("param") or param in ["shape", "shiftshape"]:
