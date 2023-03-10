@@ -151,8 +151,8 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 void OSC_NOTEON(const user_osc_param_t * const params)
 {
   // The API unfortunately doesn't report velocity.
-  set_velocity(64);
-  set_gain(0.5);
+  set_velocity(127);
+  set_gain(1);
   set_gate(1);
   dsp.instanceClear(); // Makes some sense since the oscillator is monophonic
                        // and is paused when the ADSR envelope is at zero
