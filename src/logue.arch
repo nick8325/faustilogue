@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <algorithm>
 #include "userosc.h"
-#include "inputs.h"
 #include "utils/buffer_ops.h"
 #define FAUSTFLOAT float
 
