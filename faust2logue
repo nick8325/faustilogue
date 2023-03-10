@@ -54,6 +54,10 @@ class Widget:
     meta: dict[str, str]
 
     @property
+    def path_str(self):
+        return "/".join(self.path)
+
+    @property
     def label(self):
         return self.path[-1]
 
@@ -89,16 +93,17 @@ def find_widgets(output, metadata):
         for child in widget.get("items", []):
             recurse(child, path)
 
-        if widget["type"] in ["hslider", "vslider", "nentry"]:
+        if widget["type"] in ["hslider", "vslider", "nentry", "button"]:
             meta = {k: v for dict in widget.get("meta", []) for k, v in dict.items()}
-            w = Widget(
-                path = path,
-                var = var_names[path],
-                _min = widget["min"],
-                _max = widget["max"],
-                init = widget["init"],
-                meta = meta)
+            min = 0 if widget["type"] == "button" else widget["min"]
+            max = 1 if widget["type"] == "button" else widget["max"]
+            init = 0 if widget["type"] == "button" else widget["init"]
+            w = Widget(path=path, var=var_names[path], _min=min, _max=max, init=init, meta=meta)
             result.append(w)
+
+        elif "items" not in widget:
+            type = widget["type"]
+            print(f"Warning: widget type {type} not recognised", file=sys.stderr)
 
     for widget in metadata["ui"]:
         recurse(widget, ())
@@ -126,10 +131,9 @@ def find_widget_variable_names(output):
               path.append(label)
           elif command == 'closeBox':
               path.pop()
-          elif command in ['addVerticalSlider', 'addHorizontalSlider', 'addNumEntry']:
+          elif command in ['addVerticalSlider', 'addHorizontalSlider', 'addNumEntry', 'addButton']:
               label = args[0].replace('"', '')
               var = args[1].replace('&', '')
-
               result[tuple(path) + (label,)] = var
 
   return result
@@ -166,6 +170,8 @@ def write_output_file(filename, output, widgets, sample_rate, control_rate, moni
                 if param in ["shape", "shiftshape"]:
                     file.write(f"#define {param.upper()}_MIN {w.min}\n")
                     file.write(f"#define {param.upper()}_MAX {w.max}\n")
+            else:
+                print(f"Warning: widget {w.path_str} not recognised", file=sys.stderr)
 
         # Add no-op macros for undefined parameters
         for param in params:
