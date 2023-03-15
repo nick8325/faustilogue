@@ -11,7 +11,9 @@
 #define LOADSIZE (32*1024)
 #define BUFSIZE 64
 #define SAMPLERATE 48000
-#define LENGTH 2.0f
+#define NOTE_LENGTH 0.5f
+#define NOTE_LOW 40
+#define NOTE_HIGH 100
 
 user_osc_hook_table_t *osc = (user_osc_hook_table_t *) LOADADDR;
 
@@ -49,14 +51,22 @@ int main(int argc, char ** argv) {
         .resonance = 0xfff
     };
 
-    printf("Triggering NOTE ON event\n");
-    osc->func_on(&param);
+    for (int note = NOTE_HIGH; note >= NOTE_LOW; note--) {
+        printf("Triggering NOTE ON event %d\n", note);
+        param.pitch = note << 8;
+        osc->func_on(&param);
 
-    printf("Generating %fs of sound\n", LENGTH);
-    for (int i = 0; i < SAMPLERATE * LENGTH / BUFSIZE; i++) {
-        osc->func_cycle(&param, buffer, BUFSIZE);
-        int ok = write(wavfd, buffer, sizeof buffer);
-        if (ok == -1) die("write");
+        printf("Generating %fs of sound\n", NOTE_LENGTH);
+        for (int i = 0; i < SAMPLERATE * NOTE_LENGTH / BUFSIZE; i++) {
+            osc->func_cycle(&param, buffer, BUFSIZE);
+            int ok = write(wavfd, buffer, sizeof buffer);
+            if (ok == -1) die("write");
+        }
+
+        printf("Triggering NOTE OFF event %d\n", note);
+        param.pitch = note << 8;
+        osc->func_off(&param);
+
     }
 
     printf("Done!\n");
