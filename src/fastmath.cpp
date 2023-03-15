@@ -12,6 +12,34 @@
 extern "C" {
 #endif
 
+// Fixed version of fastpowf by dukesrg, taken from
+// https://github.com/dukesrg/logue-sdk/commit/8874c04e0f030d51378cff00a4061797d8a5b461
+
+/** "Fast" power of 2 approximation, valid for x in [ -126, ... as precision allows.
+ * @note Adapted from Paul Mineiro's FastFloat
+ */
+static inline __attribute__((optimize("Ofast"), always_inline))
+float fixed_fastpow2f(float p) {
+  float offset = (p < 0) ? 1.0f : 0.0f;
+  float clipp = (p < -126) ? -126.0f : p;
+  int w = clipp;
+  float z = clipp - w + offset;
+  union { uint32_t i; float f; } v = { (uint32_t) ( (1 << 23) *
+      (clipp + 121.2740575f + 27.7280233f / (4.84252568f - z) - 1.49012907f * z)
+      ) };
+
+  return v.f;
+}
+
+/** "Fast" x to the power of p approximation
+ * @note Adapted from Paul Mineiro's FastFloat
+ * @note Warning: Seems to have divergent segments with discontinuities for some base/exponent combinations
+ */
+static inline __attribute__((optimize("Ofast"), always_inline))
+float fixed_fastpowf(float x, float p) {
+  return fixed_fastpow2f(p * fastlog2f(x));
+}
+
 static inline float fast_fabsf(float x) { return si_fabsf(x); }
 static inline float fast_acosf(float x) { return acosf(x); }
 static inline float fast_asinf(float x) { return asinf(x); }
