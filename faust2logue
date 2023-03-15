@@ -69,9 +69,10 @@ class Widget:
     # TODO: check these!
     @property
     def min(self):
-        if not self.is_percentage and self._min <= 0: return 1
-        # if self.min < -100: return -100
-        # if self.min > 100: return 100
+        if self.label.startswith("param"):
+          if not self.is_percentage and self._min <= 0: return 1
+          # if self.min < -100: return -100
+          # if self.min > 100: return 100
         return self._min
 
     @property
@@ -146,7 +147,7 @@ def write_output_file(filename, output, widgets, sample_rate, control_rate, moni
 
     with open(filename, "w") as file:
         params = set([
-            "key", "freq", "velocity", "gain", "gate",
+            "key", "freq", "bend", "velocity", "gain", "gate",
             "shape", "shiftshape", "lfo", "cutoff", "resonance",
             "param1", "param2", "param3", "param4", "param5", "param6"
         ])
@@ -161,10 +162,6 @@ def write_output_file(filename, output, widgets, sample_rate, control_rate, moni
 
                 # All parameters use set_XXX
                 file.write(f"#define set_{param}(val) do {{ float _new_val = val; if (dsp.{w.var} != _new_val) control_changed = true; dsp.{w.var} = _new_val; }} while(0)\n")
-
-                # Parameters which are set by OSC_PARAM also use initial_XXX
-                if param.startswith("param") or param in ["shape", "shiftshape"]:
-                    file.write(f"#define initial_{param} {w.init}\n")
 
                 # Shape and shift-shape use XXX_{MIN, MAX} for autoscaling
                 if param in ["shape", "shiftshape"]:
