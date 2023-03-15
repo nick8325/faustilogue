@@ -44,6 +44,7 @@ int iControl[FAUST_INT_CONTROLS];
 float fControl[FAUST_REAL_CONTROLS];
 uint32_t frames_since_last_control = 0;
 bool control_changed;
+bool reset;
 
 #ifdef MONITOR_CPU_LOAD
 #define DEMCR (volatile uint32_t* volatile) 0xe000edfc
@@ -108,6 +109,10 @@ void OSC_CYCLE(const user_osc_param_t * const params,
   if (control_changed && frames_since_last_control >= FRAMES_PER_CONTROL) {
      control_changed = false;
      frames_since_last_control = 0;
+     if (reset) {
+       dsp.instanceClear();
+       reset = false;
+     }
      dsp.control(iControl, fControl);
   }
 
@@ -154,8 +159,9 @@ void OSC_NOTEON(const user_osc_param_t * const params)
   set_velocity(127);
   set_gain(1);
   set_gate(1);
-  dsp.instanceClear(); // Makes some sense since the oscillator is monophonic
-                       // and is paused when the ADSR envelope is at zero
+  reset = true; // Makes some sense since the oscillator is monophonic
+                // and is paused when the ADSR envelope is at zero
+  control_changed = true;
 }
 
 void OSC_NOTEOFF(const user_osc_param_t * const params)
