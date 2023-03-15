@@ -3,7 +3,9 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <math.h>
 #include "userosc.h"
+#include "osc_api.h"
 
 #define die(msg) do { perror(msg); exit(1); } while(0)
 
@@ -14,14 +16,23 @@
 #define NOTE_LENGTH 0.5f
 #define NOTE_LOW 40
 #define NOTE_HIGH 100
+#define MIDI_TABLE_ADDR 0x800f100
+#define MIDI_TABLE_LEN k_midi_to_hz_size
 
 user_osc_hook_table_t *osc = (user_osc_hook_table_t *) LOADADDR;
+float *midi_table = (float *) MIDI_TABLE_ADDR;
 
 int main(int argc, char ** argv) {
     if (argc != 3) {
         printf("expected: .bin file to load, .wav file to write\n");
         exit(1);
     }
+
+    void *midi_addr = mmap((void *)(MIDI_TABLE_ADDR & 0xfffff000), 0x1000, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (midi_addr == MAP_FAILED) die("mmap");
+
+    for (int note = 0; note < MIDI_TABLE_LEN; note++)
+        midi_table[note] = 440 * powf(2, (float)(note - 69) / 12);
 
     void *addr = mmap(osc, LOADSIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (addr == MAP_FAILED) die("mmap");
