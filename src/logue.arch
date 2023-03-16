@@ -91,7 +91,6 @@ void OSC_CYCLE(const user_osc_param_t * const params,
 
   set_key(note);
   set_freq(f);
-  set_bend((float)mod / 256);
   set_lfo(q31_to_f32(params->shape_lfo));
   set_cutoff((float)params->cutoff / 0x1fff);
   set_resonance((float)params->resonance / 0x1fff);
