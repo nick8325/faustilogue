@@ -1,3 +1,6 @@
+// NOTE: this only works at 24kHz
+// TODO: retune it to sound nice at 24kHz!
+
 declare name "ElecGuitarMidi";
 declare description "Simple electric guitar model.";
 declare license "MIT";
@@ -5,7 +8,7 @@ declare copyright "(c)Romain Michon, CCRMA (Stanford University), GRAME";
 
 import("stdfaust.lib");
 
-process = guitar_ui_MIDI <: _;
+process = guitar_ui_MIDI;
 
 guitar_ui_MIDI = pm.elecGuitar(stringLength,pluckPosition,1,gain,gate)
 with{

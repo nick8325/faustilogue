@@ -1,3 +1,5 @@
+// WARNING: this model doesn't work very well on the Minilogue XD!
+
 declare name "piano";
 declare description "WaveGuide Commuted Piano";
 declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
