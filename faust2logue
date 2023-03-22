@@ -148,7 +148,7 @@ def write_output_file(filename, output, widgets, sample_rate, control_rate, moni
     with open(filename, "w") as file:
         params = set([
             "key", "freq", "velocity", "gain", "gate",
-            "shape", "shiftshape", "lfo", "cutoff", "resonance",
+            "shape", "shiftshape", "lfo",
             "param1", "param2", "param3", "param4", "param5", "param6"
         ])
 
