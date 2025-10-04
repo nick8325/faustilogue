@@ -29,7 +29,7 @@ BS = 1;
 tablesize = {table_size};
 """)
 
-        faust_args += " -nvi -os -json"
+        faust_args += " -nvi -os -ec -json"
         cmd = [faust, args.filename,
                "-a", datadir / "logue.arch",
                "-fm", datadir / "fastmath.cpp",

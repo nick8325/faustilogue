@@ -1,3 +1,6 @@
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 <<includeIntrinsic>>
 
 #include <stdint.h>
@@ -8,8 +11,7 @@
 
 // Boilerplate
 
-struct one_sample_dsp {
-    one_sample_dsp(...) { }
+struct dsp {
 };
 
 struct Meta {
@@ -40,8 +42,6 @@ struct UI {
 #undef private
 
 mydsp dsp;
-int iControl[FAUST_INT_CONTROLS];
-float fControl[FAUST_REAL_CONTROLS];
 uint32_t frames_since_last_control = 0;
 bool control_changed;
 bool reset;
@@ -103,11 +103,11 @@ void OSC_CYCLE(const user_osc_param_t * const params,
        dsp.instanceClear();
        reset = false;
      }
-     dsp.control(iControl, fControl);
+     dsp.control();
   }
 
   for (unsigned i = 0; i < frames/SAMPLE_RATE_FACTOR; i++) {
-    dsp.compute(0, &val_f32, iControl, fControl);
+    dsp.frame(0, &val_f32);
 
 #ifdef MONITOR_CPU_LOAD
     volatile float dummy = val_f32;
